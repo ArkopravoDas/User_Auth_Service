@@ -13,4 +13,6 @@ public class Session extends  BaseModel {
 
     @ManyToOne
     private User user;
+
+    private SessionState state;
 }

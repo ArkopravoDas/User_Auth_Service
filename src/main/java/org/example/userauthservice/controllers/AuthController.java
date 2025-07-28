@@ -5,6 +5,7 @@ import org.example.userauthservice.dtos.LoginRequestDto;
 import org.example.userauthservice.dtos.SignupRequestDto;
 import org.example.userauthservice.dtos.UserDto;
 import org.example.userauthservice.dtos.ValidateTokenRequestDto;
+import org.example.userauthservice.exceptions.TokenInvalidException;
 import org.example.userauthservice.models.User;
 import org.example.userauthservice.services.IAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,8 +58,13 @@ public class AuthController {
     }
 
     @PostMapping("/validateToken")
-    public Boolean validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto) {
-        return null;
+    public ResponseEntity<Void> validateToken(@RequestBody ValidateTokenRequestDto validateTokenRequestDto) {
+        Boolean result = authService.validateToken(validateTokenRequestDto.getToken(), validateTokenRequestDto.getUserId());
+        if(!result) {
+            throw new TokenInvalidException("Please login again !!");
+        }
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     UserDto from(User user) {
