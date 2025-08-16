@@ -1,10 +1,14 @@
 package org.example.userauthservice.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.MacAlgorithm;
 import org.antlr.v4.runtime.misc.Pair;
+import org.example.userauthservice.clients.KafkaProducerClient;
+import org.example.userauthservice.dtos.EmailDto;
 import org.example.userauthservice.exceptions.PasswordMismatchException;
 import org.example.userauthservice.exceptions.UserAlreadyExistsException;
 import org.example.userauthservice.exceptions.UserNotSignedUpException;
@@ -39,6 +43,12 @@ public class AuthService implements IAuthService {
     @Autowired
     private SecretKey secretKey;
 
+    @Autowired
+    private KafkaProducerClient kafkaProducerClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Override
     public User signup(String name, String email, String password, String phoneNumber) {
         Optional<User> userOptional = userRepo.findByEmail(email);
@@ -52,6 +62,20 @@ public class AuthService implements IAuthService {
         user.setPassword(bCryptPasswordEncoder.encode(password));
         user.setName(name);
         user.setPhoneNumber(phoneNumber);
+
+        //Send Email
+        try {
+            EmailDto emailDto = new EmailDto();
+            emailDto.setSubject("Welcome to Scaler");
+            emailDto.setBody("Have a good learning experience");
+            emailDto.setTo(email);
+            emailDto.setFrom("arko.work2000@gmail.com");
+            String message = objectMapper.writeValueAsString(emailDto);
+            kafkaProducerClient.sendMessage("signup", message);
+        }catch (JsonProcessingException exception) {
+            throw new RuntimeException(exception.getMessage());
+        }
+
         return userRepo.save(user);
     }
 
